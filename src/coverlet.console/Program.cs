@@ -22,6 +22,7 @@ namespace Coverlet.Console
     {
         static int Main(string[] args)
         {
+            Debugger.Launch();
             IServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient<IRetryHelper, RetryHelper>();
             serviceCollection.AddTransient<IProcessExitHandler, ProcessExitHandler>();
@@ -64,6 +65,10 @@ namespace Coverlet.Console
             CommandOption mergeWith = app.Option("--merge-with", "Path to existing coverage result to merge.", CommandOptionType.SingleValue);
             CommandOption useSourceLink = app.Option("--use-source-link", "Specifies whether to use SourceLink URIs in place of file system paths.", CommandOptionType.NoValue);
             CommandOption doesNotReturnAttributes = app.Option("--does-not-return-attribute", "Attributes that mark methods that do not return.", CommandOptionType.MultipleValue);
+            CommandOption additionalModulePaths = app.Option("--module-path", "Specifies an additional module path for assembly resolution.", CommandOptionType.MultipleValue);
+            CommandOption instrumentOnly = app.Option("--instrument-only", "Permanently instruments the assemblies, skipping execution. To be used with --skip-instrumentation or --collect-only when consecutive out of process executions are required.", CommandOptionType.NoValue);
+            CommandOption collectOnly = app.Option("--collect-only", "Collects the coverage result from an out-of-process execution of instrumented assemblies.", CommandOptionType.NoValue);
+            CommandOption skipInstrumentation = app.Option("--skip-instrumentation", "Runs the process directly, skipping the instrumentation process. Assumes that the assemblies have previously been instrumented.", CommandOptionType.NoValue);
 
             app.OnExecute(() =>
             {
@@ -91,42 +96,85 @@ namespace Coverlet.Console
                     MergeWith = mergeWith.Value(),
                     UseSourceLink = useSourceLink.HasValue(),
                     SkipAutoProps = skipAutoProp.HasValue(),
+                    AdditionalModulePaths = additionalModulePaths.Values.ToArray(),
                     DoesNotReturnAttributes = doesNotReturnAttributes.Values.ToArray()
                 };
 
-                Coverage coverage = new Coverage(moduleOrAppDirectory.Value,
+                Coverage coverage = null;
+                CoveragePrepareResult coveragePrepareResult = null;
+
+                if (skipInstrumentation.HasValue() || collectOnly.HasValue())
+                {
+                    coveragePrepareResult = LoadCoverageDetailsFromFile(moduleOrAppDirectory.Value, fileSystem);
+                    coverage = new Coverage(coveragePrepareResult,
+                                                 logger,
+                                                 serviceProvider.GetRequiredService<IInstrumentationHelper>(),
+                                                 fileSystem,
+                                                 serviceProvider.GetRequiredService<ISourceRootTranslator>());
+                }
+                else
+                {
+                    coverage = new Coverage(moduleOrAppDirectory.Value,
                                                  parameters,
                                                  logger,
                                                  serviceProvider.GetRequiredService<IInstrumentationHelper>(),
                                                  fileSystem,
                                                  serviceProvider.GetRequiredService<ISourceRootTranslator>(),
                                                  serviceProvider.GetRequiredService<ICecilSymbolHelper>());
-                coverage.PrepareModules();
+                    coveragePrepareResult = coverage.PrepareModules();
+                }
 
-                Process process = new Process();
-                process.StartInfo.FileName = target.Value();
-                process.StartInfo.Arguments = targs.HasValue() ? targs.Value() : string.Empty;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.OutputDataReceived += (sender, eventArgs) =>
+
+                if (instrumentOnly.HasValue())
                 {
-                    if (!string.IsNullOrEmpty(eventArgs.Data))
-                        logger.LogInformation(eventArgs.Data, important: true);
-                };
+                    using (Stream instrumentedStateFile = fileSystem.NewFileStream(GetCoverageDetailsFileName(moduleOrAppDirectory.Value), FileMode.OpenOrCreate, FileAccess.Write))
+                    {
+                        using (Stream serializedState = CoveragePrepareResult.Serialize(coveragePrepareResult))
+                        {
+                            serializedState.CopyTo(instrumentedStateFile);
+                        }
+                    }
 
-                process.ErrorDataReceived += (sender, eventArgs) =>
+                    IInstrumentationHelper instrumentationHelper = serviceProvider.GetService<IInstrumentationHelper>();
+                    instrumentationHelper.ShouldRestoreOriginalModulesOnExit = false;
+
+                    return 0;
+                }
+
+                Process process = null;
+
+                if (collectOnly.HasValue())
                 {
-                    if (!string.IsNullOrEmpty(eventArgs.Data))
-                        logger.LogError(eventArgs.Data);
-                };
+                    IInstrumentationHelper instrumentationHelper = serviceProvider.GetService<IInstrumentationHelper>();
+                    instrumentationHelper.ShouldRestoreOriginalModulesOnExit = false;
+                }
+                else
+                {
+                    process = new Process();
+                    process.StartInfo.FileName = target.Value();
+                    process.StartInfo.Arguments = targs.HasValue() ? targs.Value() : string.Empty;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.OutputDataReceived += (sender, eventArgs) =>
+                    {
+                        if (!string.IsNullOrEmpty(eventArgs.Data))
+                            logger.LogInformation(eventArgs.Data, important: true);
+                    };
 
-                process.Start();
+                    process.ErrorDataReceived += (sender, eventArgs) =>
+                    {
+                        if (!string.IsNullOrEmpty(eventArgs.Data))
+                            logger.LogError(eventArgs.Data);
+                    };
 
-                process.BeginErrorReadLine();
-                process.BeginOutputReadLine();
+                    process.Start();
 
-                process.WaitForExit();
+                    process.BeginErrorReadLine();
+                    process.BeginOutputReadLine();
+
+                    process.WaitForExit();
+                }
 
                 var dOutput = output.HasValue() ? output.Value() : Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar.ToString();
                 var dThreshold = threshold.HasValue() ? double.Parse(threshold.Value()) : 0;
@@ -135,7 +183,9 @@ namespace Coverlet.Console
 
                 logger.LogInformation("\nCalculating coverage result...");
 
-                var result = coverage.GetCoverageResult();
+                var restoreOriginalAssemblies = !skipInstrumentation.HasValue() && !collectOnly.HasValue();
+
+                var result = coverage.GetCoverageResult(restoreOriginalAssemblies);
                 var directory = Path.GetDirectoryName(dOutput);
                 if (directory == string.Empty)
                 {
@@ -226,7 +276,7 @@ namespace Coverlet.Console
                 coverageTable.AddRow("Average", $"{averageLinePercent}%", $"{averageBranchPercent}%", $"{averageMethodPercent}%");
 
                 logger.LogInformation(coverageTable.ToStringAlternative());
-                if (process.ExitCode > 0)
+                if (process?.ExitCode > 0)
                 {
                     exitCode += (int)CommandExitCodes.TestFailed;
                 }
@@ -276,6 +326,24 @@ namespace Coverlet.Console
                 logger.LogError(ex.Message);
                 return exitCode > 0 ? exitCode : (int)CommandExitCodes.Exception;
             }
+        }
+
+        private static CoveragePrepareResult LoadCoverageDetailsFromFile(string moduleOrAppDirectory, IFileSystem fileSystem)
+        {
+            var coverageFile = GetCoverageDetailsFileName(Path.GetDirectoryName(moduleOrAppDirectory));
+
+            if (fileSystem.Exists(coverageFile))
+            {
+                using var fileStream = new FileStream(coverageFile, FileMode.Open);
+                return CoveragePrepareResult.Deserialize(fileStream);
+            }
+
+            throw new FileNotFoundException("Missing instrumentation file, please make sure to instrument the modules first.");
+        }
+
+        private static string GetCoverageDetailsFileName(string folderPath)
+        {
+            return Path.Combine(folderPath, "__instrumentation.json");
         }
 
         static string GetAssemblyVersion() => typeof(Program).Assembly.GetName().Version.ToString();

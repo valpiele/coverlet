@@ -24,6 +24,7 @@ namespace Coverlet.Core.Instrumentation
         private readonly string _identifier;
         private readonly string[] _excludeFilters;
         private readonly string[] _includeFilters;
+        private readonly string[] _additionalModulePaths;
         private readonly ExcludedFilesHelper _excludedFilesHelper;
         private readonly string[] _excludedAttributes;
         private readonly bool _singleHit;
@@ -60,6 +61,7 @@ namespace Coverlet.Core.Instrumentation
             string[] excludedFiles,
             string[] excludedAttributes,
             string[] doesNotReturnAttributes,
+            string[] additionalModulePaths,
             bool singleHit,
             bool skipAutoProps,
             ILogger logger,
@@ -72,6 +74,7 @@ namespace Coverlet.Core.Instrumentation
             _identifier = identifier;
             _excludeFilters = excludeFilters;
             _includeFilters = includeFilters;
+            _additionalModulePaths = additionalModulePaths;
             _excludedFilesHelper = new ExcludedFilesHelper(excludedFiles, logger);
             _excludedAttributes = PrepareAttributes(excludedAttributes, nameof(ExcludeFromCoverageAttribute), nameof(ExcludeFromCodeCoverageAttribute));
             _singleHit = singleHit;
@@ -199,6 +202,15 @@ namespace Coverlet.Core.Instrumentation
             using (var resolver = new NetstandardAwareAssemblyResolver(_module, _logger))
             {
                 resolver.AddSearchDirectory(Path.GetDirectoryName(_module));
+
+                if (_additionalModulePaths != null)
+                {
+                    foreach (var modulePath in _additionalModulePaths)
+                    {
+                        resolver.AddSearchDirectory(modulePath);
+                    }
+                }
+
                 var parameters = new ReaderParameters { ReadSymbols = true, AssemblyResolver = resolver };
                 if (_isCoreLibrary)
                 {

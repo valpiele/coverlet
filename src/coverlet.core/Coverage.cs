@@ -19,12 +19,13 @@ namespace Coverlet.Core
         public string[] ExcludeFilters { get; set; }
         public string[] ExcludedSourceFiles { get; set; }
         public string[] ExcludeAttributes { get; set; }
+        public string[] AdditionalModulePaths { get; set; }
         public bool IncludeTestAssembly { get; set; }
         public bool SingleHit { get; set; }
         public string MergeWith { get; set; }
         public bool UseSourceLink { get; set; }
         public string[] DoesNotReturnAttributes { get; set; }
-        public bool SkipAutoProps { get; set; }
+        public bool SkipAutoProps { get; set; }        
     }
 
     internal class Coverage
@@ -36,6 +37,7 @@ namespace Coverlet.Core
         private string[] _excludeFilters;
         private string[] _excludedSourceFiles;
         private string[] _excludeAttributes;
+        private string[] _additionalModulePaths;
         private bool _includeTestAssembly;
         private bool _singleHit;
         private string _mergeWith;
@@ -69,6 +71,7 @@ namespace Coverlet.Core
             _excludedSourceFiles = parameters.ExcludedSourceFiles;
             _excludeAttributes = parameters.ExcludeAttributes;
             _includeTestAssembly = parameters.IncludeTestAssembly;
+            _additionalModulePaths = parameters.AdditionalModulePaths;
             _singleHit = parameters.SingleHit;
             _mergeWith = parameters.MergeWith;
             _useSourceLink = parameters.UseSourceLink;
@@ -124,10 +127,11 @@ namespace Coverlet.Core
                 var instrumenter = new Instrumenter(module,
                                                     _identifier,
                                                     _excludeFilters,
-                                                    _includeFilters,
+                                                    _includeFilters,                                                    
                                                     _excludedSourceFiles,
                                                     _excludeAttributes,
                                                     _doesNotReturnAttributes,
+                                                    _additionalModulePaths,
                                                     _singleHit,
                                                     _skipAutoProps,
                                                     _logger,
@@ -147,7 +151,7 @@ namespace Coverlet.Core
                         if (!instrumenter.SkipModule)
                         {
                             _results.Add(result);
-                            _logger.LogVerbose($"Instrumented module: '{module}'");
+                            _logger.LogInformation($"Instrumented module: '{module}'");
                         }
                     }
                     catch (Exception ex)
@@ -168,7 +172,7 @@ namespace Coverlet.Core
             };
         }
 
-        public CoverageResult GetCoverageResult()
+        public CoverageResult GetCoverageResult(bool restoreOriginalAssemblies = true)
         {
             CalculateCoverage();
 
@@ -254,7 +258,11 @@ namespace Coverlet.Core
                 }
 
                 modules.Add(Path.GetFileName(result.ModulePath), documents);
-                _instrumentationHelper.RestoreOriginalModule(result.ModulePath, _identifier);
+
+                if (restoreOriginalAssemblies)
+                {
+                    _instrumentationHelper.RestoreOriginalModule(result.ModulePath, _identifier);
+                }
             }
 
             // In case of anonymous delegate compiler generate a custom class and passes it as type.method delegate.

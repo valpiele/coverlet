@@ -22,9 +22,18 @@ namespace Coverlet.Core.Helpers
         private readonly ISourceRootTranslator _sourceRootTranslator;
         private ILogger _logger;
 
+        public bool ShouldRestoreOriginalModulesOnExit { get; set; } = true;
+
         public InstrumentationHelper(IProcessExitHandler processExitHandler, IRetryHelper retryHelper, IFileSystem fileSystem, ILogger logger, ISourceRootTranslator sourceRootTranslator)
         {
-            processExitHandler.Add((s, e) => RestoreOriginalModules());
+            processExitHandler.Add((s, e) =>
+            {
+                if (ShouldRestoreOriginalModulesOnExit)
+                {
+                    RestoreOriginalModules();
+                }
+            });
+
             _retryHelper = retryHelper;
             _fileSystem = fileSystem;
             _logger = logger;

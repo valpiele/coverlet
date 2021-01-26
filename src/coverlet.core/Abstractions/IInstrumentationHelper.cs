@@ -2,6 +2,7 @@
 {
     internal interface IInstrumentationHelper
     {
+        bool ShouldRestoreOriginalModulesOnExit { get; set; }
         void BackupOriginalModule(string module, string identifier);
         void DeleteHitsFile(string path);
         string[] GetCoverableModules(string module, string[] directories, bool includeTestAssembly);
