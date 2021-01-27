@@ -22,7 +22,6 @@ namespace Coverlet.Console
     {
         static int Main(string[] args)
         {
-            Debugger.Launch();
             IServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient<IRetryHelper, RetryHelper>();
             serviceCollection.AddTransient<IProcessExitHandler, ProcessExitHandler>();
