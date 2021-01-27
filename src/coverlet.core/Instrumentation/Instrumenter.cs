@@ -232,6 +232,14 @@ namespace Coverlet.Core.Instrumentation
             using (var resolver = new NetstandardAwareAssemblyResolver(_module, _logger))
             {
                 resolver.AddSearchDirectory(Path.GetDirectoryName(_module));
+                if (_additionalModulePaths != null)
+                {
+                    foreach (var modulePath in _additionalModulePaths)
+                    {
+                        resolver.AddSearchDirectory(modulePath);
+                    }
+                }
+
                 var parameters = new ReaderParameters { ReadSymbols = true, AssemblyResolver = resolver };
                 if (_isCoreLibrary)
                 {
