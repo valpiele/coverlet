@@ -21,7 +21,7 @@
         We need to load assembly version 1.4.2.0 to properly work
         We can check minimum supported package version here https://github.com/Microsoft/vstest/blob/master/src/Microsoft.TestPlatform.ObjectModel/Microsoft.TestPlatform.ObjectModel.csproj#L37
      -->
-    <PackageReference Update="System.Reflection.Metadata" Version="1.5.0" />
+    <PackageReference Update="System.Reflection.Metadata" Version="1.6.0" />
     <PackageReference Update="xunit" Version="2.4.1" />
     <PackageReference Update="xunit.assert" Version="2.4.1" />
     <PackageReference Update="xunit.runner.visualstudio" Version="2.4.1"/>
