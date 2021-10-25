@@ -21,6 +21,7 @@ namespace Coverlet.Core.Helpers
         private readonly Dictionary<string, List<string>> _sourceToDeterministicPathMapping;
         private const string MappingFileName = "CoverletSourceRootsMapping";
         private Dictionary<string, string> _resolutionCacheFiles;
+        private string _modulePath;
 
         public SourceRootTranslator(ILogger logger, IFileSystem fileSystem)
         {
@@ -70,6 +71,7 @@ namespace Coverlet.Core.Helpers
 
         private Dictionary<string, List<SourceRootMapping>> LoadSourceRootMapping(string directory)
         {
+            _modulePath = directory;
             Dictionary<string, List<SourceRootMapping>> mapping = new Dictionary<string, List<SourceRootMapping>>();
 
             string mappingFilePath = Path.Combine(directory, MappingFileName);
@@ -112,6 +114,15 @@ namespace Coverlet.Core.Helpers
 
         public string ResolveFilePath(string originalFileName)
         {
+            if (Path.GetExtension(originalFileName) == ".pdb")                
+            {
+                var localFilePath = Path.Combine(_modulePath, Path.GetFileName(originalFileName));
+                if (_fileSystem.Exists(localFilePath))
+                {
+                    return localFilePath;
+                }
+            }
+
             if (_resolutionCacheFiles != null && _resolutionCacheFiles.ContainsKey(originalFileName))
             {
                 return _resolutionCacheFiles[originalFileName];
