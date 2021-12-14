@@ -38,6 +38,7 @@ namespace Coverlet.Collector.DataCollection
                 coverletSettings.IncludeDirectories = ParseIncludeDirectories(configurationElement);
                 coverletSettings.ExcludeAttributes = ParseExcludeAttributes(configurationElement);
                 coverletSettings.ExcludeSourceFiles = ParseExcludeSourceFiles(configurationElement);
+                coverletSettings.AdditionalModulePaths = ParseAdditionalModulePaths(configurationElement);
                 coverletSettings.MergeWith = ParseMergeWith(configurationElement);
                 coverletSettings.UseSourceLink = ParseUseSourceLink(configurationElement);
                 coverletSettings.SingleHit = ParseSingleHit(configurationElement);
@@ -148,6 +149,17 @@ namespace Coverlet.Collector.DataCollection
         {
             XmlElement excludeSourceFilesElement = configurationElement[CoverletConstants.ExcludeSourceFilesElementName];
             return this.SplitElement(excludeSourceFilesElement);
+        }
+
+        /// <summary>
+        /// Parse additional module paths
+        /// </summary>
+        /// <param name="configurationElement">Configuration element</param>
+        /// <returns>Source files to exclude</returns>
+        private string[] ParseAdditionalModulePaths(XmlElement configurationElement)
+        {
+            XmlElement additionalModulePaths = configurationElement[CoverletConstants.AdditionalModulePaths];
+            return this.SplitElement(additionalModulePaths);
         }
 
         /// <summary>

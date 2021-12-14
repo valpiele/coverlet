@@ -184,7 +184,7 @@ namespace Coverlet.Core.Instrumentation
         private void CreateReachabilityHelper()
         {
             using (var stream = _fileSystem.NewFileStream(_module, FileMode.Open, FileAccess.Read))
-            using (var resolver = new NetstandardAwareAssemblyResolver(_module, _logger))
+            using (var resolver = new NetstandardAwareAssemblyResolver(_module, _parameters.AdditionalModulePaths, _logger))
             {
                 resolver.AddSearchDirectory(Path.GetDirectoryName(_module));
                 var parameters = new ReaderParameters { ReadSymbols = true, AssemblyResolver = resolver };
@@ -205,7 +205,7 @@ namespace Coverlet.Core.Instrumentation
             CreateReachabilityHelper();
 
             using (var stream = _fileSystem.NewFileStream(_module, FileMode.Open, FileAccess.ReadWrite))
-            using (var resolver = new NetstandardAwareAssemblyResolver(_module, _logger))
+            using (var resolver = new NetstandardAwareAssemblyResolver(_module, _parameters.AdditionalModulePaths, _logger))
             {
                 resolver.AddSearchDirectory(Path.GetDirectoryName(_module));
                 var parameters = new ReaderParameters { ReadSymbols = true, AssemblyResolver = resolver };

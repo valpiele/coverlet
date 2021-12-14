@@ -281,7 +281,7 @@ namespace Coverlet.Core.Instrumentation.Tests
         [Fact]
         public void TestInstrument_NetStandardAwareAssemblyResolver_FromRuntime()
         {
-            NetstandardAwareAssemblyResolver netstandardResolver = new NetstandardAwareAssemblyResolver(null, _mockLogger.Object);
+            NetstandardAwareAssemblyResolver netstandardResolver = new NetstandardAwareAssemblyResolver(null, null, _mockLogger.Object);
 
             // We ask for "official" netstandard.dll implementation with know MS public key cc7b13ffcd2ddd51 same in all runtime
             AssemblyDefinition resolved = netstandardResolver.Resolve(AssemblyNameReference.Parse("netstandard, Version=0.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"));
@@ -315,7 +315,7 @@ namespace Coverlet.Core.Instrumentation.Tests
                 File.WriteAllBytes("netstandard.dll", dllStream.ToArray());
             }
 
-            NetstandardAwareAssemblyResolver netstandardResolver = new NetstandardAwareAssemblyResolver(newAssemlby.Location, _mockLogger.Object);
+            NetstandardAwareAssemblyResolver netstandardResolver = new NetstandardAwareAssemblyResolver(newAssemlby.Location, null, _mockLogger.Object);
             AssemblyDefinition resolved = netstandardResolver.Resolve(AssemblyNameReference.Parse(newAssemlby.FullName));
 
             // We check if final netstandard.dll resolved is local folder one and not "official" netstandard.dll
@@ -640,7 +640,7 @@ public class SampleClass
         [Fact]
         public void TestInstrument_NetstandardAwareAssemblyResolver_PreserveCompilationContext()
         {
-            NetstandardAwareAssemblyResolver netstandardResolver = new NetstandardAwareAssemblyResolver(Assembly.GetExecutingAssembly().Location, _mockLogger.Object);
+            NetstandardAwareAssemblyResolver netstandardResolver = new NetstandardAwareAssemblyResolver(Assembly.GetExecutingAssembly().Location, null, _mockLogger.Object);
             AssemblyDefinition asm = netstandardResolver.TryWithCustomResolverOnDotNetCore(new AssemblyNameReference("Microsoft.Extensions.Logging.Abstractions", new Version("2.2.0")));
             Assert.NotNull(asm);
         }

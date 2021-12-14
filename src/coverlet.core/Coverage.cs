@@ -28,6 +28,8 @@ namespace Coverlet.Core
         [DataMember]
         public string[] ExcludeAttributes { get; set; }
         [DataMember]
+        public string[] AdditionalModulePaths { get; set; }
+        [DataMember]
         public bool IncludeTestAssembly { get; set; }
         [DataMember]
         public bool SingleHit { get; set; }

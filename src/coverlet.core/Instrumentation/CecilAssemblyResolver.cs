@@ -63,17 +63,24 @@ namespace Coverlet.Core.Instrumentation
             }
         }
 
-        public NetstandardAwareAssemblyResolver(string modulePath, ILogger logger)
+        public NetstandardAwareAssemblyResolver(string modulePath, string[] additionalModulePaths, ILogger logger)
         {
             _modulePath = modulePath;
             _logger = logger;
+
+            if (additionalModulePaths != null)
+            {
+                foreach (var additionalModulePath in additionalModulePaths)
+                {
+                    this.AddSearchDirectory(additionalModulePath);
+                }
+            }
 
             // this is lazy because we cannot create AspNetCoreSharedFrameworkResolver if not on .NET Core runtime, 
             // runtime folders are different
             _compositeResolver = new Lazy<CompositeCompilationAssemblyResolver>(() => new CompositeCompilationAssemblyResolver(new ICompilationAssemblyResolver[]
             {
                 new AppBaseCompilationAssemblyResolver(),
-                new WindowsDesktopSharedFrameworkResolver(_logger),
                 new ReferenceAssemblyPathResolver(),
                 new PackageCompilationAssemblyResolver(),
                 new AspNetCoreSharedFrameworkResolver(_logger),
@@ -212,59 +219,6 @@ namespace Coverlet.Core.Instrumentation
             }
 
             throw new CecilAssemblyResolutionException($"AssemblyResolutionException for '{name}'. Try to add <PreserveCompilationContext>true</PreserveCompilationContext> to test projects </PropertyGroup> or pass '/p:CopyLocalLockFileAssemblies=true' option to the 'dotnet test' command-line", new AssemblyResolutionException(name));
-        }
-    }
-
-    internal class WindowsDesktopSharedFrameworkResolver : ICompilationAssemblyResolver
-    {
-        private readonly string[] _windowsDesktopSharedFrameworkDirs = null;
-        private readonly ILogger _logger = null;
-
-        public WindowsDesktopSharedFrameworkResolver(ILogger logger)
-        {
-            _logger = logger;
-            string runtimeRootPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            //string runtimeVersion = runtimeRootPath.Substring(runtimeRootPath.LastIndexOf(Path.DirectorySeparatorChar) + 1);
-
-            var baseWindowsDesktopFolder = Path.Combine(runtimeRootPath, "../../Microsoft.WindowsDesktop.App");
-            if (Directory.Exists(baseWindowsDesktopFolder))
-            {
-                _windowsDesktopSharedFrameworkDirs = Directory.EnumerateDirectories(baseWindowsDesktopFolder).ToArray();
-            }
-
-            _logger.LogVerbose("WindowsDesktopSharedFrameworkResolver search paths:");
-            foreach (string searchPath in _windowsDesktopSharedFrameworkDirs)
-            {
-                _logger.LogVerbose(searchPath);
-            }
-        }
-
-        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
-        {
-            string dllName = $"{library.Name}.dll";
-
-            if (_windowsDesktopSharedFrameworkDirs == null)
-                return false;
-
-            foreach (string sharedFrameworkPath in _windowsDesktopSharedFrameworkDirs)
-            {
-                if (!Directory.Exists(sharedFrameworkPath))
-                {
-                    continue;
-                }
-
-                foreach (var file in Directory.GetFiles(sharedFrameworkPath))
-                {
-                    if (Path.GetFileName(file).Equals(dllName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _logger.LogVerbose($"'{dllName}' found in '{file}'");
-                        assemblies.Add(file);
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
     }
 

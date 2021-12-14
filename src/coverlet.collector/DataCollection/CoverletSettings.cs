@@ -78,6 +78,11 @@ namespace Coverlet.Collector.DataCollection
         /// </summary>
         public bool DeterministicReport { get; set; }
 
+        /// <summary>
+        /// Additional paths to search for modules.
+        /// </summary>
+        public string[] AdditionalModulePaths { get; set; }
+
         public override string ToString()
         {
             var builder = new StringBuilder();

@@ -25,6 +25,7 @@ namespace Coverlet.Collector.DataCollection
                 ExcludedSourceFiles = settings.ExcludeSourceFiles,
                 ExcludeAttributes = settings.ExcludeAttributes,
                 IncludeTestAssembly = settings.IncludeTestAssembly,
+                AdditionalModulePaths = settings.AdditionalModulePaths,
                 SingleHit = settings.SingleHit,
                 MergeWith = settings.MergeWith,
                 UseSourceLink = settings.UseSourceLink,
