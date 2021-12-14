@@ -98,14 +98,14 @@ namespace Coverlet.Core.Helpers
                     if (entry.Type == DebugDirectoryEntryType.CodeView)
                     {
                         var codeViewData = peReader.ReadCodeViewDebugDirectoryData(entry);
-                        if (_sourceRootTranslator.ResolveFilePath(codeViewData.Path) == $"{Path.GetFileNameWithoutExtension(module)}.pdb")
+                        if (_sourceRootTranslator.ResolveFilePath(codeViewData.Path, module) == $"{Path.GetFileNameWithoutExtension(module)}.pdb")
                         {
                             // PDB is embedded
                             embedded = true;
                             return true;
                         }
 
-                        return _fileSystem.Exists(_sourceRootTranslator.ResolveFilePath(codeViewData.Path));
+                        return _fileSystem.Exists(_sourceRootTranslator.ResolveFilePath(codeViewData.Path, module));
                     }
                 }
 
@@ -129,7 +129,7 @@ namespace Coverlet.Core.Helpers
                             foreach (DocumentHandle docHandle in metadataReader.Documents)
                             {
                                 Document document = metadataReader.GetDocument(docHandle);
-                                string docName = _sourceRootTranslator.ResolveFilePath(metadataReader.GetString(document.Name));
+                                string docName = _sourceRootTranslator.ResolveFilePath(metadataReader.GetString(document.Name), null);
 
                                 // We verify all docs and return false if not all are present in local
                                 // We could have false negative if doc is not a source
@@ -161,7 +161,7 @@ namespace Coverlet.Core.Helpers
                     if (entry.Type == DebugDirectoryEntryType.CodeView)
                     {
                         var codeViewData = peReader.ReadCodeViewDebugDirectoryData(entry);
-                        using Stream pdbStream = _fileSystem.OpenRead(_sourceRootTranslator.ResolveFilePath(codeViewData.Path));
+                        using Stream pdbStream = _fileSystem.OpenRead(_sourceRootTranslator.ResolveFilePath(codeViewData.Path, module));
                         using MetadataReaderProvider metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
                         MetadataReader metadataReader = null;
                         try
@@ -176,7 +176,7 @@ namespace Coverlet.Core.Helpers
                         foreach (DocumentHandle docHandle in metadataReader.Documents)
                         {
                             Document document = metadataReader.GetDocument(docHandle);
-                            string docName = _sourceRootTranslator.ResolveFilePath(metadataReader.GetString(document.Name));
+                            string docName = _sourceRootTranslator.ResolveFilePath(metadataReader.GetString(document.Name), module);
 
                             // We verify all docs and return false if not all are present in local
                             // We could have false negative if doc is not a source

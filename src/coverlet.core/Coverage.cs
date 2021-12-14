@@ -20,6 +20,7 @@ namespace Coverlet.Core
         public string[] ExcludedSourceFiles { get; set; }
         public string[] ExcludeAttributes { get; set; }
         public string[] AdditionalModulePaths { get; set; }
+        public string HitsFolderPath { get; set; }
         public bool IncludeTestAssembly { get; set; }
         public bool SingleHit { get; set; }
         public string MergeWith { get; set; }
@@ -38,6 +39,7 @@ namespace Coverlet.Core
         private string[] _excludedSourceFiles;
         private string[] _excludeAttributes;
         private string[] _additionalModulePaths;
+        private string _hitsFolderPath;
         private bool _includeTestAssembly;
         private bool _singleHit;
         private string _mergeWith;
@@ -72,6 +74,7 @@ namespace Coverlet.Core
             _excludeAttributes = parameters.ExcludeAttributes;
             _includeTestAssembly = parameters.IncludeTestAssembly;
             _additionalModulePaths = parameters.AdditionalModulePaths;
+            _hitsFolderPath = parameters.HitsFolderPath;
             _singleHit = parameters.SingleHit;
             _mergeWith = parameters.MergeWith;
             _useSourceLink = parameters.UseSourceLink;
@@ -132,6 +135,7 @@ namespace Coverlet.Core
                                                     _excludeAttributes,
                                                     _doesNotReturnAttributes,
                                                     _additionalModulePaths,
+                                                    _hitsFolderPath,
                                                     _singleHit,
                                                     _skipAutoProps,
                                                     _logger,

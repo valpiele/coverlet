@@ -30,6 +30,8 @@ namespace Coverlet.Core.Instrumentation
         private readonly bool _singleHit;
         private readonly bool _skipAutoProps;
         private readonly bool _isCoreLibrary;
+        private readonly string _hitsFolderPath;
+
         private readonly ILogger _logger;
         private readonly IInstrumentationHelper _instrumentationHelper;
         private readonly IFileSystem _fileSystem;
@@ -62,6 +64,7 @@ namespace Coverlet.Core.Instrumentation
             string[] excludedAttributes,
             string[] doesNotReturnAttributes,
             string[] additionalModulePaths,
+            string hitsFolderPath,
             bool singleHit,
             bool skipAutoProps,
             ILogger logger,
@@ -74,6 +77,7 @@ namespace Coverlet.Core.Instrumentation
             _identifier = identifier;
             _excludeFilters = excludeFilters;
             _includeFilters = includeFilters;
+            _hitsFolderPath = hitsFolderPath;
             _additionalModulePaths = additionalModulePaths;
             _excludedFilesHelper = new ExcludedFilesHelper(excludedFiles, logger);
             _excludedAttributes = PrepareAttributes(excludedAttributes, nameof(ExcludeFromCoverageAttribute), nameof(ExcludeFromCodeCoverageAttribute));
@@ -145,10 +149,7 @@ namespace Coverlet.Core.Instrumentation
 
         public InstrumenterResult Instrument()
         {
-            string hitsFilePath = Path.Combine(
-                Path.GetTempPath(),
-                Path.GetFileNameWithoutExtension(_module) + "_" + _identifier
-            );
+            string hitsFilePath = Path.Combine((!string.IsNullOrEmpty(this._hitsFolderPath)) ? this._hitsFolderPath : Path.GetTempPath(), Path.GetFileNameWithoutExtension(this._module) + "_" + this._identifier);
 
             _result = new InstrumenterResult
             {

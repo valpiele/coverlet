@@ -62,6 +62,7 @@ namespace Coverlet.Console
             CommandOption singleHit = app.Option("--single-hit", "Specifies whether to limit code coverage hit reporting to a single hit for each location", CommandOptionType.NoValue);
             CommandOption skipAutoProp = app.Option("--skipautoprops", "Neither track nor record auto-implemented properties.", CommandOptionType.NoValue);
             CommandOption mergeWith = app.Option("--merge-with", "Path to existing coverage result to merge.", CommandOptionType.SingleValue);
+            CommandOption hitsFolderPath = app.Option("--hits-path", "Path to store the hits files. Defaults to the user temp folder.", CommandOptionType.SingleValue);
             CommandOption useSourceLink = app.Option("--use-source-link", "Specifies whether to use SourceLink URIs in place of file system paths.", CommandOptionType.NoValue);
             CommandOption doesNotReturnAttributes = app.Option("--does-not-return-attribute", "Attributes that mark methods that do not return.", CommandOptionType.MultipleValue);
             CommandOption additionalModulePaths = app.Option("--module-path", "Specifies an additional module path for assembly resolution.", CommandOptionType.MultipleValue);
@@ -96,7 +97,8 @@ namespace Coverlet.Console
                     UseSourceLink = useSourceLink.HasValue(),
                     SkipAutoProps = skipAutoProp.HasValue(),
                     AdditionalModulePaths = additionalModulePaths.Values.ToArray(),
-                    DoesNotReturnAttributes = doesNotReturnAttributes.Values.ToArray()
+                    DoesNotReturnAttributes = doesNotReturnAttributes.Values.ToArray(),
+                    HitsFolderPath = hitsFolderPath.Value()
                 };
 
                 Coverage coverage = null;
@@ -178,7 +180,11 @@ namespace Coverlet.Console
                 var dOutput = output.HasValue() ? output.Value() : Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar.ToString();
                 var dThreshold = threshold.HasValue() ? double.Parse(threshold.Value()) : 0;
                 var dThresholdTypes = thresholdTypes.HasValue() ? thresholdTypes.Values : new List<string>(new string[] { "line", "branch", "method" });
+#if NET6_0_OR_GREATER
                 var dThresholdStat = thresholdStat.HasValue() ? Enum.Parse<ThresholdStatistic>(thresholdStat.Value(), true) : Enum.Parse<ThresholdStatistic>("minimum", true);
+#else
+                var dThresholdStat = thresholdStat.HasValue() ? (ThresholdStatistic)Enum.Parse(typeof(ThresholdStatistic), thresholdStat.Value(), true) : (ThresholdStatistic)Enum.Parse(typeof(ThresholdStatistic), "minimum", true);
+#endif
 
                 logger.LogInformation("\nCalculating coverage result...");
 
@@ -342,7 +348,7 @@ namespace Coverlet.Console
 
         private static string GetCoverageDetailsFileName(string folderPath)
         {
-            return Path.Combine(folderPath, "__instrumentation.json");
+            return Path.Combine(folderPath, "__instrumentation.xml");
         }
 
         static string GetAssemblyVersion() => typeof(Program).Assembly.GetName().Version.ToString();

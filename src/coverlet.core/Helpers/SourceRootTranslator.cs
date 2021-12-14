@@ -81,7 +81,7 @@ namespace Coverlet.Core.Helpers
             return _sourceRootMapping.TryGetValue(pathRoot, out List<SourceRootMapping> sourceRootMapping) ? sourceRootMapping.AsReadOnly() : null;
         }
 
-        public string ResolveFilePath(string originalFileName)
+        public string ResolveFilePath(string originalFileName, string modulePath = null)
         {
             if (_resolutionCacheFiles != null && _resolutionCacheFiles.ContainsKey(originalFileName))
             {
@@ -104,7 +104,12 @@ namespace Coverlet.Core.Helpers
                     }
                 }
             }
-            return originalFileName;
+
+            if (File.Exists(originalFileName) || string.IsNullOrEmpty(modulePath))
+            {
+                return originalFileName;
+            }
+            return Path.Combine(Path.GetDirectoryName(modulePath), Path.GetFileName(originalFileName));
         }
     }
 }
